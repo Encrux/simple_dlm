@@ -13,9 +13,10 @@ text = "\n".join(lines)
 
 seq_len = 128
 iterations = 10000000
+batch_size = 64
 
 transformer = Transformer().to(device)
-optimizer = torch.optim.Adam(transformer.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(transformer.parameters(), lr=3e-4)
 
 
 
@@ -26,25 +27,45 @@ def grab_chunk() -> torch.Tensor:
     return torch.tensor(transformer.encoder.encode(chunk)).to(device)
 
 def add_noise(input: list[int], t: float) -> str:
-    mask = (torch.rand(seq_len) < mask_prob).long().to(device)                                                                                                                                                            
+    mask = (torch.rand(batch_size, seq_len, device=device) < mask_prob).long()                                                                                                                                                            
     masked_input = input * (1 - mask)  
     return masked_input, mask
+
+def sample():
+    x = torch.zeros(64, dtype=torch.long, device=device)                                                                                                                                      
+                                                                                                                                                                                                                
+    with torch.no_grad():                                                                                                                                                                                         
+        for step in range(20):
+            predictions = transformer.forward(x, 1.0 - step / 20)                                                                                                                                                 
+            probs = torch.softmax(predictions, dim=-1)
+                                                                                                                                                                                                                
+            mask_positions = (x == 0)                                                                                                                                                                             
+            if not mask_positions.any():                                                                                                                                                                          
+                break                                                                                                                                                                                             
+                                                                                                                                                                                                                
+            for pos in mask_positions.nonzero():                                                                                                                                                                  
+                if random.random() < 1 / (20 - step):
+                    x[pos] = torch.multinomial(probs[pos], 1)                                                                                                                                                     
+                                            
+        print(''.join(transformer.encoder.decode(x.tolist())))  
      
+
 start = time.time()
 for i in range(0, iterations):
-    chunk = grab_chunk()
+    batch = chunks = torch.stack([grab_chunk() for _ in range(batch_size)])
 
     mask_prob = random.uniform(0, 1)
 
-    masked_input, mask = add_noise(chunk, mask_prob)
+    masked_input, mask = add_noise(batch, mask_prob)
 
     predictions = transformer.forward(masked_input, mask_prob)
 
-    loss = torch.nn.functional.cross_entropy(predictions[mask == 1], chunk[mask == 1])
+    loss = torch.nn.functional.cross_entropy(predictions[mask == 1], batch[mask == 1])
 
     if i % 1000 == 0:
         elapsed = time.time() - start
         print(f"step {i}, loss: {loss.item():.4f}, it/s: {i / elapsed:.1f}") 
+        sample()
 
     loss.backward()
     optimizer.step()
