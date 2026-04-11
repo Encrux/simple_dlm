@@ -37,13 +37,13 @@ class Transformer(nn.Module):
 
     def attention(self, Q: Tensor, K: Tensor, V: Tensor):
         d_k = K.shape[-1]
-        return softmax(Q @ K.T/ sqrt(d_k), dim=-1) @ V 
+        return softmax(Q @ K.T / (d_k ** 0.5), dim=-1) @ V 
     
     def self_attention(self, X: Tensor):
         return self.attention(X, X, X)
     
     def embedding(self, x: Tensor, mask_prob: float):
-        t_emb = self.mask_prob_emb(tensor([mask_prob]))
+        t_emb = self.mask_prob_emb(tensor([mask_prob], device=x.device))
         return self.token_emb[x] + self.pos_emb[:len(x)] + t_emb
     
     def forward(self, x: Tensor, mask_prob: float) -> Tensor:
