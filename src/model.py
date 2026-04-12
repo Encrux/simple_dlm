@@ -1,5 +1,5 @@
 from torch import nn, Tensor, softmax, sqrt, randn, layer_norm, tensor
-from transformer.encoder import Encoder
+from src.encoder import Encoder
 
 class Transformer(nn.Module):
 
