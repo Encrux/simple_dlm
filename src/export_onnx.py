@@ -34,10 +34,14 @@ def export(checkpoint: str, out_dir: str, seq_len: int):
     print(f"wrote model.onnx and vocab.json to {out}")
 
 
-if __name__ == "__main__":
+def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--checkpoint", default="checkpoint.pt")
+    p.add_argument("--checkpoint", default="checkpoints/checkpoint.pt")
     p.add_argument("--out", default="web/public")
     p.add_argument("--seq-len", type=int, default=128)
     args = p.parse_args()
     export(args.checkpoint, args.out, args.seq_len)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,9 @@
-import torch
+import argparse
 import random
+
+import torch
+
+from src.model import Transformer
 
 
 def sample(model, query, length, device):
@@ -23,4 +27,24 @@ def sample(model, query, length, device):
                 if random.random() < 1 / (20 - step):
                     x[pos] = torch.multinomial(probs[pos], 1)                                                                                                                                                     
                                             
-        print(''.join(model.encoder.decode(x.tolist())))  
+        print(''.join(model.encoder.decode(x.tolist())))
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--checkpoint", default="checkpoints/checkpoint.pt")
+    p.add_argument("--query", default="To be, ")
+    p.add_argument("--length", type=int, default=64)
+    p.add_argument("--device", default="mps")
+    args = p.parse_args()
+
+    device = torch.device(args.device)
+    model = Transformer().to(device)
+    model.load_state_dict(torch.load(args.checkpoint, map_location=device))
+    model.eval()
+
+    sample(model, args.query, args.length, device)
+
+
+if __name__ == "__main__":
+    main()
