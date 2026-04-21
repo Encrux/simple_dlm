@@ -11,7 +11,8 @@ def sample(model, query, length, device):
     with torch.no_grad():                                                                                                                                                                                         
         for step in range(20):
 
-            predictions = model.forward(x, 1.0 - step / 20)                                                                                                                                                 
+            mask_prob = torch.tensor([1.0 - step / 20], device=device)
+            predictions = model.forward(x, mask_prob)
             probs = torch.softmax(predictions, dim=-1)
                                                                                                                                                                                                                 
             mask_positions = (x == 0) & ~fixed                                                                                                                                                                            

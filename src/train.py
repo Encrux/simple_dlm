@@ -40,14 +40,15 @@ for i in range(0, iterations):
 
     masked_input, mask = add_noise(batch, mask_prob)
 
-    predictions = transformer.forward(masked_input, mask_prob)
+    predictions = transformer.forward(masked_input, torch.tensor([mask_prob], device=device))
 
     loss = torch.nn.functional.cross_entropy(predictions[mask == 1], batch[mask == 1])
 
     if i % 1000 == 0:
         elapsed = time.time() - start
-        print(f"step {i}, loss: {loss.item():.4f}, it/s: {i / elapsed:.1f}") 
+        print(f"step {i}, loss: {loss.item():.4f}, it/s: {i / elapsed:.1f}")
         sample(transformer, "To be, ", 64, device)
+        torch.save(transformer.state_dict(), "checkpoint.pt")
 
     loss.backward()
     optimizer.step()

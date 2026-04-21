@@ -1,4 +1,4 @@
-from torch import nn, Tensor, softmax, sqrt, randn, layer_norm, tensor
+from torch import nn, Tensor, softmax, sqrt, randn, layer_norm
 from src.encoder import Encoder
 
 class Transformer(nn.Module):
@@ -42,11 +42,11 @@ class Transformer(nn.Module):
     def self_attention(self, X: Tensor):
         return self.attention(X, X, X)
     
-    def embedding(self, x: Tensor, mask_prob: float):
-        t_emb = self.mask_prob_emb(tensor([mask_prob], device=x.device))
+    def embedding(self, x: Tensor, mask_prob: Tensor):
+        t_emb = self.mask_prob_emb(mask_prob)
         return self.token_emb[x] + self.pos_emb[:x.shape[-1]] + t_emb
-    
-    def forward(self, x: Tensor, mask_prob: float) -> Tensor:
+
+    def forward(self, x: Tensor, mask_prob: Tensor) -> Tensor:
         x = self.embedding(x, mask_prob)
         for ln1, W_Q, W_K, W_V, ln2, linear1, relu, linear2 in self.layers:
             x = x + self.attention(W_Q(ln1(x)), W_K(ln1(x)), W_V(ln1(x)))
