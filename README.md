@@ -1,5 +1,36 @@
 # My own Diffusion Language Model
-Free-Range, Organic, Hand-Crafted
+Free-Range, Organic, Hand-Crafted.
+
+### Noteworthy Gibberish
+
+step 67000, loss: 1.2239, it/s: 0.7:
+
+```
+To be, and be of men?
+
+
+
+Prown AMEN:
+
+O yout aboars of
+
+Ra':
+
+Un
+```
+
+step 77000, loss: 1.0891, it/s: 0.8:
+```
+To be, fo hend!
+
+
+
+First her sense ountier to Jupits,
+
+be horse.
+```
+
+Wiser words have never been spoken. Trained on an M2 Air 16GB for... a while, idk. Be horse.
 
 # Setup
 
