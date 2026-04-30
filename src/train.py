@@ -49,9 +49,9 @@ def main():
 
         masked_input, mask = add_noise(batch, mask_prob)
 
-        predictions = transformer.forward(masked_input, torch.tensor([mask_prob], device=device))
-
-        loss = torch.nn.functional.cross_entropy(predictions[mask == 1], batch[mask == 1])
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+            predictions = transformer.forward(masked_input, torch.tensor([mask_prob], device=device))
+            loss = torch.nn.functional.cross_entropy(predictions[mask == 1], batch[mask == 1])
 
         if i % 1000 == 0:
             elapsed = time.time() - start
