@@ -28,28 +28,35 @@ def main():
     transformer = Transformer().to(device)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=1e-4)
 
-    def grab_chunk() -> torch.Tensor:
+    corpus = torch.tensor(transformer.encoder.encode(text), dtype=torch.long, device=device)
+    corpus_len = corpus.shape[0]
+    arange_seq = torch.arange(seq_len, device=device)
 
-        start = random.randint(0, len(text) - seq_len)
-        chunk = text[start:start + seq_len]
-        return torch.tensor(transformer.encoder.encode(chunk)).to(device)
+    def grab_batch() -> torch.Tensor:
+        starts = torch.randint(0, corpus_len - seq_len, (batch_size,), device=device)
+        return corpus[starts[:, None] + arange_seq[None, :]]
 
     def add_noise(input: list[int], t: float) -> str:
-        mask = (torch.rand(batch_size, seq_len, device=device) < mask_prob).long()                                                                                                                                                            
-        masked_input = input * (1 - mask)  
-        return masked_input, mask     
+        mask = (torch.rand(batch_size, seq_len, device=device) < mask_prob).long()
+        masked_input = input * (1 - mask)
+        return masked_input, mask
 
     start = time.time()
     for i in range(0, iterations):
-        batch = chunks = torch.stack([grab_chunk() for _ in range(batch_size)])
+        batch = grab_batch()
 
         mask_prob = random.uniform(0, 1)
 
         masked_input, mask = add_noise(batch, mask_prob)
 
-        predictions = transformer.forward(masked_input, torch.tensor([mask_prob], device=device))
-
-        loss = torch.nn.functional.cross_entropy(predictions[mask == 1], batch[mask == 1])
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+            predictions = transformer.forward(masked_input, torch.tensor([mask_prob], device=device))
+            per_token = torch.nn.functional.cross_entropy(
+                predictions.reshape(-1, predictions.shape[-1]),
+                batch.reshape(-1),
+                reduction="none",
+            ).reshape(batch_size, seq_len)
+            loss = (per_token * mask).sum() / mask.sum().clamp(min=1)
 
         if i % 1000 == 0:
             elapsed = time.time() - start

@@ -18,26 +18,24 @@ class Transformer(nn.Module):
         self.pos_emb = nn.Parameter(randn(max_seq_len, embed_dim))
         self.mask_prob_emb = self.mask_prob_emb = nn.Linear(1, embed_dim)
 
-        self.layers = nn.ModuleList([                                                                                                                                                                                 
+        self.layers = nn.ModuleList([
             nn.ModuleList([
-                nn.LayerNorm(embed_dim),        
-                nn.Linear(embed_dim, embed_dim), #W_Q
-                nn.Linear(embed_dim, embed_dim), #W_K
-                nn.Linear(embed_dim, embed_dim), #W_V
+                nn.LayerNorm(embed_dim),
+                nn.Linear(embed_dim, 3 * embed_dim),  # fused W_QKV
 
                 #FFN
                 nn.LayerNorm(embed_dim),
                 nn.Linear(embed_dim, hidden_dim),
-                nn.ReLU(), 
+                nn.ReLU(),
                 nn.Linear(hidden_dim, embed_dim)])
-            for _ in range(num_layers)                                                                                                                                                                                
-        ])    
+            for _ in range(num_layers)
+        ])
 
         self.output = nn.Linear(embed_dim, vocab_size)
 
     def attention(self, Q: Tensor, K: Tensor, V: Tensor):
         d_k = K.shape[-1]
-        return softmax(Q @ K.transpose(-2, -1) / (d_k ** 0.5), dim=-1) @ V 
+        return softmax(Q @ K.transpose(-2, -1) / (d_k ** 0.5), dim=-1) @ V
     
     def self_attention(self, X: Tensor):
         return self.attention(X, X, X)
@@ -48,8 +46,9 @@ class Transformer(nn.Module):
 
     def forward(self, x: Tensor, mask_prob: Tensor) -> Tensor:
         x = self.embedding(x, mask_prob)
-        for ln1, W_Q, W_K, W_V, ln2, linear1, relu, linear2 in self.layers:
-            x = x + self.attention(W_Q(ln1(x)), W_K(ln1(x)), W_V(ln1(x)))
+        for ln1, W_QKV, ln2, linear1, relu, linear2 in self.layers:
+            Q, K, V = W_QKV(ln1(x)).chunk(3, dim=-1)
+            x = x + self.attention(Q, K, V)
             x = x + linear2(relu(linear1(ln2(x))))
             
         return self.output(x)
