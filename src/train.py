@@ -28,20 +28,22 @@ def main():
     transformer = Transformer().to(device)
     optimizer = torch.optim.Adam(transformer.parameters(), lr=1e-4)
 
-    def grab_chunk() -> torch.Tensor:
+    corpus = torch.tensor(transformer.encoder.encode(text), dtype=torch.long, device=device)
+    corpus_len = corpus.shape[0]
+    arange_seq = torch.arange(seq_len, device=device)
 
-        start = random.randint(0, len(text) - seq_len)
-        chunk = text[start:start + seq_len]
-        return torch.tensor(transformer.encoder.encode(chunk)).to(device)
+    def grab_batch() -> torch.Tensor:
+        starts = torch.randint(0, corpus_len - seq_len, (batch_size,), device=device)
+        return corpus[starts[:, None] + arange_seq[None, :]]
 
     def add_noise(input: list[int], t: float) -> str:
-        mask = (torch.rand(batch_size, seq_len, device=device) < mask_prob).long()                                                                                                                                                            
-        masked_input = input * (1 - mask)  
-        return masked_input, mask     
+        mask = (torch.rand(batch_size, seq_len, device=device) < mask_prob).long()
+        masked_input = input * (1 - mask)
+        return masked_input, mask
 
     start = time.time()
     for i in range(0, iterations):
-        batch = chunks = torch.stack([grab_chunk() for _ in range(batch_size)])
+        batch = grab_batch()
 
         mask_prob = random.uniform(0, 1)
 
