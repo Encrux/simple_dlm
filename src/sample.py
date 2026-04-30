@@ -36,10 +36,11 @@ def main():
     p.add_argument("--query", default="To be, ")
     p.add_argument("--length", type=int, default=64)
     p.add_argument("--device", default="mps")
+    p.add_argument("--data", default="data/input.txt")
     args = p.parse_args()
 
     device = torch.device(args.device)
-    model = Transformer().to(device)
+    model = Transformer(data_path=args.data).to(device)
     model.load_state_dict(torch.load(args.checkpoint, map_location=device))
     model.eval()
 

@@ -10,31 +10,37 @@ import time
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--device", default="mps")
+    p.add_argument("--data", default="data/input.txt")
+    p.add_argument("--batch-size", type=int, default=64)
+    p.add_argument("--seq-len", type=int, default=128)
+    p.add_argument("--resume", default=None, help="path to checkpoint.pt to resume from")
     args = p.parse_args()
 
     os.makedirs("checkpoints", exist_ok=True)
-    data = "data/input.txt"
+    data = args.data
     device = torch.device(args.device)
 
     with open(data) as f:
-            lines = f.readlines()
+        text = f.read()
 
-    text = "\n".join(lines)
-
-    seq_len = 128
+    seq_len = args.seq_len
     iterations = 10000000
-    batch_size = 64
+    batch_size = args.batch_size
 
-    transformer = Transformer().to(device)
+    transformer = Transformer(data_path=data).to(device)
+    if args.resume:
+        transformer.load_state_dict(torch.load(args.resume, map_location=device))
+        print(f"resumed weights from {args.resume}")
     optimizer = torch.optim.Adam(transformer.parameters(), lr=1e-4)
 
-    corpus = torch.tensor(transformer.encoder.encode(text), dtype=torch.long, device=device)
+    corpus_np = transformer.encoder.encode_array(text)
+    corpus = torch.from_numpy(corpus_np).to(device=device, dtype=torch.int32)
     corpus_len = corpus.shape[0]
-    arange_seq = torch.arange(seq_len, device=device)
+    arange_seq = torch.arange(seq_len, device=device, dtype=torch.int64)
 
     def grab_batch() -> torch.Tensor:
-        starts = torch.randint(0, corpus_len - seq_len, (batch_size,), device=device)
-        return corpus[starts[:, None] + arange_seq[None, :]]
+        starts = torch.randint(0, corpus_len - seq_len, (batch_size,), device=device, dtype=torch.int64)
+        return corpus[starts[:, None] + arange_seq[None, :]].long()
 
     def add_noise(input: list[int], t: float) -> str:
         mask = (torch.rand(batch_size, seq_len, device=device) < mask_prob).long()
