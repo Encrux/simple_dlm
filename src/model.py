@@ -37,7 +37,7 @@ class Transformer(nn.Module):
 
     def attention(self, Q: Tensor, K: Tensor, V: Tensor):
         d_k = K.shape[-1]
-        return softmax(Q @ K.transpose(-2, -1) / (d_k ** 0.5), dim=-1) @ V 
+        return softmax(Q @ K.transpose(-2, -1) / (d_k ** 0.5), dim=-1) @ V
     
     def self_attention(self, X: Tensor):
         return self.attention(X, X, X)
@@ -49,7 +49,8 @@ class Transformer(nn.Module):
     def forward(self, x: Tensor, mask_prob: Tensor) -> Tensor:
         x = self.embedding(x, mask_prob)
         for ln1, W_Q, W_K, W_V, ln2, linear1, relu, linear2 in self.layers:
-            x = x + self.attention(W_Q(ln1(x)), W_K(ln1(x)), W_V(ln1(x)))
+            xn = ln1(x)
+            x = x + self.attention(W_Q(xn), W_K(xn), W_V(xn))
             x = x + linear2(relu(linear1(ln2(x))))
             
         return self.output(x)
