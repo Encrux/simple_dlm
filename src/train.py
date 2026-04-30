@@ -51,7 +51,12 @@ def main():
 
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
             predictions = transformer.forward(masked_input, torch.tensor([mask_prob], device=device))
-            loss = torch.nn.functional.cross_entropy(predictions[mask == 1], batch[mask == 1])
+            per_token = torch.nn.functional.cross_entropy(
+                predictions.reshape(-1, predictions.shape[-1]),
+                batch.reshape(-1),
+                reduction="none",
+            ).reshape(batch_size, seq_len)
+            loss = (per_token * mask).sum() / mask.sum().clamp(min=1)
 
         if i % 1000 == 0:
             elapsed = time.time() - start
