@@ -1,5 +1,5 @@
-# My own Diffusion Language Model
-Free-Range, Organic, Hand-Crafted.
+# My Own Diffusion Language Model
+Free-Range, Organic, Hand-Crafted. No AI used.
 
 ### Noteworthy Gibberish
 
