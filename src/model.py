@@ -3,10 +3,10 @@ from src.encoder import Encoder
 
 class Transformer(nn.Module):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data_path="data/input.txt", *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.encoder = Encoder("data/input.txt")
+        self.encoder = Encoder(data_path)
 
         vocab_size = len(self.encoder.vocab())
         max_seq_len = 1024

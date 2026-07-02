@@ -7,11 +7,11 @@ import torch
 from src.model import Transformer
 
 
-def export(checkpoint: str, out_dir: str, seq_len: int):
+def export(checkpoint: str, out_dir: str, seq_len: int, data: str):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    model = Transformer()
+    model = Transformer(data_path=data)
     model.load_state_dict(torch.load(checkpoint, map_location="cpu"))
     model.eval()
 
@@ -39,8 +39,9 @@ def main():
     p.add_argument("--checkpoint", default="checkpoints/checkpoint.pt")
     p.add_argument("--out", default="web/public")
     p.add_argument("--seq-len", type=int, default=128)
+    p.add_argument("--data", default="data/input.txt")
     args = p.parse_args()
-    export(args.checkpoint, args.out, args.seq_len)
+    export(args.checkpoint, args.out, args.seq_len, args.data)
 
 
 if __name__ == "__main__":
